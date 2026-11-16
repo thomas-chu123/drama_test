@@ -21,3 +21,11 @@
 ## 影片生成
 
 已新增 comfyui-local-video，支援 MiniMax H3 首幀／首尾幀及多圖參考。詳見 [VIDEO-README.md](VIDEO-README.md)。
+
+## 單圖與多圖參考首幀
+
+`comfyui-local-edit` 使用 Qwen Image 2.1 Turbo，可依 `reference_bindings` 順序輸入 1–16 張 PNG，角色均為 `reference_image`。每張上限 30 MiB，合計上限 48 MiB；以 `<image1>`、`<image2>` 等在提示詞中區分人物、道具與場景用途。
+
+`parameters.reference_resolution` 對應編碼節點的參考圖解析度，預設 0 保留既有單圖行為；多圖首幀批次使用 512 控制輸入負擔。輸出尺寸仍由 width／height 決定，步數維持模板的 8 步固定 sigma。collect 僅回收既有任務，不重新上傳或提交。
+
+離線驗證：`python3 adapters/test_edit_multireference.py`；本機節點宣告支援至 image_16。多人鏡頭的實際品質與耗時仍須生成後驗收。

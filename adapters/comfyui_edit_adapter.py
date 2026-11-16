@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""以本機 Qwen 參考圖編輯流程生成首幀。"""
+"""以本機 Qwen 單圖或多圖參考流程生成首幀。"""
 from pathlib import Path
 import json
 import time
@@ -15,10 +15,10 @@ def preflight(job):
     if job.get("modality") != "image" or not isinstance(job.get("prompt"), str) or not job["prompt"].strip():
         fail("須提供圖片任務與非空提示詞")
     targets = job.get("outputs", [])
-    if len(targets) != 1 or not isinstance(targets[0], str) or Path(targets[0]).suffix.lower() != ".png":
+    if not isinstance(targets, list) or len(targets) != 1 or not isinstance(targets[0], str) or Path(targets[0]).suffix.lower() != ".png":
         fail("每次須指定一個 PNG 輸出")
     p = job.get("parameters", {})
-    if not isinstance(p, dict) or set(p) - {"width", "height", "seed", "prompt_language"}:
+    if not isinstance(p, dict) or set(p) - {"width", "height", "seed", "prompt_language", "reference_resolution"}:
         fail("含不支援的圖片引數")
     for key in ("width", "height"):
         value = p.get(key, 768)
@@ -27,26 +27,48 @@ def preflight(job):
     seed = p.get("seed", 42)
     if type(seed) is not int or not 0 <= seed < 2**64:
         fail("種子須為無號 64 位整數")
+    resolution = p.get("reference_resolution", 0)
+    if type(resolution) is not int or not 0 <= resolution <= 4096 or resolution % 32:
+        fail("參考圖解析度須為 0 至 4096 間的 32 倍數")
     bindings = job.get("reference_bindings", [])
-    if len(bindings) != 1 or bindings[0].get("role") != "reference_image" or bindings[0].get("order") != 1:
-        fail("須提供一張外貌參考圖片")
+    if not isinstance(bindings, list) or not 1 <= len(bindings) <= 16 or any(not isinstance(b, dict) for b in bindings):
+        fail("須提供一至十六張參考圖片")
+    if any(b.get("role") != "reference_image" for b in bindings) or [b.get("order") for b in bindings] != list(range(1, len(bindings) + 1)):
+        fail("參考圖須使用 reference_image 並由 1 連續編號")
     root = Path(job["project_root"]).resolve()
-    relative = bindings[0].get("path")
-    if not isinstance(relative, str) or Path(relative).is_absolute():
-        fail("參考圖須為專案相對路徑")
-    path = (root / relative).resolve()
-    if not path.is_relative_to(root) or not path.is_file() or path.stat().st_size > 30 * 1024**2:
-        fail("參考圖遺失、過大或超出專案")
-    if not path.read_bytes().startswith(b"\x89PNG\r\n\x1a\n"):
-        fail("此測試介面須輸入 PNG 參考圖")
+    paths = []
+    total = 0
+    for binding in bindings:
+        relative = binding.get("path")
+        if not isinstance(relative, str) or Path(relative).is_absolute():
+            fail("參考圖須為專案相對路徑")
+        path = (root / relative).resolve()
+        if not path.is_relative_to(root) or not path.is_file() or path.stat().st_size > 30 * 1024**2:
+            fail("參考圖遺失、過大或超出專案")
+        if not path.read_bytes().startswith(b"\x89PNG\r\n\x1a\n"):
+            fail("此介面須輸入 PNG 參考圖")
+        total += path.stat().st_size
+        paths.append(path)
+    if total > 48 * 1024**2:
+        fail("參考圖片總量超過 48 MiB")
     if not isinstance(job.get("output_root"), str) or not job["output_root"]:
         fail("缺少暫存輸出目錄")
-    return p, path
+    return p, paths
 
 
-def build(job, p, filename):
+def build(job, p, filenames):
+    if isinstance(filenames, str):
+        filenames = [filenames]
     graph = json.loads(Path(__file__).with_name("edit_image_qwen_turbo_api.json").read_text())
-    graph["100"] = {"class_type": "LoadImage", "inputs": {"image": filename}}
+    inputs = graph["474"]["inputs"]
+    for key in list(inputs):
+        if key.startswith("images."):
+            del inputs[key]
+    for index, filename in enumerate(filenames, 1):
+        node_id = str(99 + index)
+        graph[node_id] = {"class_type": "LoadImage", "inputs": {"image": filename}}
+        inputs[f"images.image_{index}"] = [node_id, 0]
+    inputs["resolution"] = p.get("reference_resolution", 0)
     graph["474"]["inputs"]["prompt"] = job["prompt"]
     graph["456"]["inputs"].update(width=p.get("width", 768), height=p.get("height", 768))
     graph["504"]["inputs"]["noise_seed"] = p.get("seed", 42)
@@ -55,15 +77,16 @@ def build(job, p, filename):
 
 
 def run(job):
-    p, path = preflight(job)
+    p, paths = preflight(job)
     base, token = base_url(), auth_token()
     prompt_id = job.get("collect_provider_job_id")
     if prompt_id is not None and (not isinstance(prompt_id, str) or not prompt_id):
         fail("取回任務編號不合法")
     if prompt_id is None:
-        graph = build(job, p, path.name)
+        graph = build(job, p, [path.name for path in paths])
         check_nodes(graph, request_json(base + "/object_info", token=token))
-        graph["100"]["inputs"]["image"] = upload(base, token, path)
+        for index, path in enumerate(paths):
+            graph[str(100 + index)]["inputs"]["image"] = upload(base, token, path)
         response = request_json(base + "/prompt", payload={"prompt": graph, "client_id": str(uuid.uuid4())}, token=token)
         prompt_id = response.get("prompt_id") if isinstance(response, dict) else None
         if not isinstance(prompt_id, str) or not prompt_id:

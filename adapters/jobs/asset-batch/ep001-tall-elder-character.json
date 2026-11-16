@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "job_id": "EP001-TALL-ELDER-CHARACTER",
+  "modality": "image",
+  "adapter": "comfyui-local",
+  "source": "episodes/EP001/image-prompts.md",
+  "source_entry": "IMG-TALL-ELDER-CHARACTER",
+  "outputs": [
+    "episodes/EP001/production/images/EP001-TALL-ELDER-CHARACTER.png"
+  ],
+  "parameters": {
+    "width": 1024,
+    "height": 1024,
+    "steps": 8,
+    "seed": 42,
+    "prompt_language": "zh-TW"
+  },
+  "overwrite": false
+}

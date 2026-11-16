@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "job_id": "EP001-SHOT026-START-B01",
+  "modality": "image",
+  "adapter": "comfyui-local-edit",
+  "source": "episodes/EP001/storyboard.md",
+  "source_entry": "SHOT-EP001-026",
+  "outputs": [
+    "episodes/EP001/production/images/EP001-SHOT026-START.png"
+  ],
+  "parameters": {
+    "width": 768,
+    "height": 768,
+    "seed": 42,
+    "reference_resolution": 512,
+    "prompt_language": "zh-TW"
+  },
+  "overwrite": false
+}

@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "job_id": "EP001-SHOT002-video-audio-v2",
+  "modality": "video",
+  "adapter": "comfyui-local-video",
+  "source": "adapters/SHOT002-AUDIO-V2-TEST.md",
+  "prompt": "全長約 4.46 秒，正常速度，承接開場定格的站坐、視線和持物狀態。段譽左手掩嘴，肩膀輕顫，漏出短促笑意；他收住笑抬眼。其他人物不入畫，也不發聲。 攝影機緩推至段譽臉部，移動平順，不額外插入切鏡。 最後保持：段譽收笑抬眼，其他人物保持在畫外。 在約第 4 秒完成動作後穩住收尾表情至片尾。 聲音：段譽只發出一聲輕短、自然的低笑，隨收笑動作停止；之後僅保留微弱呼吸與安靜廳堂底聲。全程無臺詞、無畫外人聲、無含糊呢喃、無背景音樂。",
+  "reference_bindings": [
+    {
+      "slot_id": "REF-START",
+      "order": 1,
+      "path": "episodes/EP001/production/images/EP001-SHOT002-START.png",
+      "label": "笑聲引視首幀",
+      "role": "first_frame",
+      "may_control": [
+        "開場構圖與人物外貌、服裝、場景光線"
+      ],
+      "must_not_control": [
+        "後續動作與運鏡"
+      ]
+    }
+  ],
+  "outputs": [
+    "episodes/EP001/production/videos/EP001-SHOT002-fl2va-audio-v2.mp4"
+  ],
+  "parameters": {
+    "workflow": "fl2va",
+    "width": 768,
+    "height": 768,
+    "frames": 107,
+    "fps": 24,
+    "seed": 42,
+    "steps": 8,
+    "audio": true,
+    "prompt_language": "zh-TW"
+  },
+  "overwrite": false
+}
