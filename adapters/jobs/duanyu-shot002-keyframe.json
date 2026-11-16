@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0",
+  "job_id": "EP001-SHOT002-keyframe-test",
+  "modality": "image",
+  "adapter": "comfyui-local-edit",
+  "source": "episodes/EP001/storyboard.md",
+  "outputs": [
+    "episodes/EP001/production/images/EP001-SHOT002-START.png"
+  ],
+  "parameters": {
+    "width": 768,
+    "height": 768,
+    "seed": 42,
+    "prompt_language": "zh-TW"
+  },
+  "overwrite": false,
+  "prompt": "以參考圖 <image1> 的同一位段譽製作單張敘事畫面，沿用他的臉型、五官、黑色半束長髮與髮髻、青衫、淺色內衫、深色腰帶及寫實攝影質感。中近景，50mm，平視。段譽坐在劍湖宮練武廳外客席末端，左手掩嘴，右手握合起的素面摺扇，低頭含笑，臉上尚無傷痕。日間自然散射光由廳門側進入，背景為木柱、座席與裸露梁架。畫面只有一位段譽，其他人物在畫外；將參考圖的三視圖版式改為上述單一鏡頭構圖。無字幕、水印、視圖標籤。",
+  "reference_bindings": [
+    {
+      "slot_id": "REF-DUANYU",
+      "order": 1,
+      "path": "episodes/EP001/production/images/EP001-DUANYU-CHARACTER.png",
+      "label": "段譽人物設定圖",
+      "role": "reference_image",
+      "may_control": [
+        "段譽臉型、髮式與身形"
+      ],
+      "must_not_control": [
+        "本鏡構圖、傷勢、動作、表情、背景與畫風"
+      ]
+    }
+  ]
+}
